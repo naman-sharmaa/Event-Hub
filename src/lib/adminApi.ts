@@ -1,5 +1,6 @@
 // Admin API utilities
-const ADMIN_API_BASE = 'http://localhost:5050/api/admin';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
+const ADMIN_API_BASE = `${API_BASE_URL}/admin`;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('adminToken');
