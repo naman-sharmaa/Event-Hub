@@ -81,7 +81,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       const firebaseToken = await firebaseUser.getIdToken();
       
       // Send Firebase token to backend
-      const response = await fetch('http://localhost:5050/api/auth/firebase-google-auth', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/auth/firebase-google-auth`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

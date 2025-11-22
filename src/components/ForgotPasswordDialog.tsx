@@ -36,7 +36,7 @@ const ForgotPasswordDialog = ({ open, onOpenChange, role = 'user' }: ForgotPassw
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/auth/forgot-password/request', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/auth/forgot-password/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const ForgotPasswordDialog = ({ open, onOpenChange, role = 'user' }: ForgotPassw
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/auth/forgot-password/verify-otp', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/auth/forgot-password/verify-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ const ForgotPasswordDialog = ({ open, onOpenChange, role = 'user' }: ForgotPassw
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/auth/forgot-password/reset', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/auth/forgot-password/reset`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const ForgotPasswordDialog = ({ open, onOpenChange, role = 'user' }: ForgotPassw
   const handleResendOTP = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/auth/forgot-password/resend', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/auth/forgot-password/resend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

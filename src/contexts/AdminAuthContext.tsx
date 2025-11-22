@@ -40,7 +40,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         const storedAdmin = localStorage.getItem('adminUser');
 
         if (token && storedAdmin) {
-          const response = await fetch('http://localhost:5050/api/admin/me', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/admin/me`, {
             headers: {
               'Authorization': `Bearer ${token}`,
             },
@@ -77,7 +77,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
 
-      const response = await fetch('http://localhost:5050/api/admin/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5050/api'}/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
