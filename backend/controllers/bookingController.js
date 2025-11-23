@@ -149,9 +149,15 @@ export const verifyPayment = async (req, res) => {
 
     // Send confirmation email
     try {
+      console.log('📧 Attempting to send confirmation email to:', booking.userId.email);
       await sendBookingConfirmationEmail(booking, booking.eventId, booking.userId);
+      console.log('✅ Confirmation email sent successfully');
     } catch (emailError) {
-      console.error('Error sending confirmation email:', emailError);
+      console.error('❌ Error sending confirmation email:', emailError);
+      console.error('Email error details:', {
+        message: emailError.message,
+        stack: emailError.stack
+      });
       // Don't fail the booking if email fails
     }
 
