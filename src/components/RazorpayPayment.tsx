@@ -74,8 +74,12 @@ const RazorpayPayment = ({
         description: `Booking for ${event.title}`,
         order_id: bookingData.booking.razorpayOrderId,
         handler: async (response: any) => {
+          console.log("=== Payment handler START ===");
+          console.log("Payment response:", response);
+          console.log("Booking ID:", bookingData.booking._id);
+          
           try {
-            console.log("Payment handler triggered", response);
+            console.log("Starting payment verification...");
             
             // Verify payment with backend
             const verifyResponse = await bookingsAPI.verifyPayment({
@@ -85,31 +89,54 @@ const RazorpayPayment = ({
               bookingId: bookingData.booking._id,
             });
 
-            console.log("Payment verified successfully", verifyResponse);
+            console.log("✅ Payment verified successfully:", verifyResponse);
 
             // Show success message
-            toast({
-              title: "Payment Successful!",
-              description: "Your tickets have been booked. Redirecting to profile...",
-            });
+            try {
+              toast({
+                title: "Payment Successful!",
+                description: "Your tickets have been booked. Redirecting...",
+              });
+              console.log("✅ Toast shown");
+            } catch (toastError) {
+              console.error("Toast error:", toastError);
+            }
 
             // Call onSuccess callback
-            if (onSuccess) {
-              onSuccess();
+            try {
+              if (onSuccess) {
+                onSuccess();
+                console.log("✅ onSuccess callback executed");
+              }
+            } catch (callbackError) {
+              console.error("onSuccess callback error:", callbackError);
             }
             
-            // Force reload to profile page to ensure state updates
+            // Force reload to profile page
+            console.log("Redirecting to /profile in 1 second...");
             setTimeout(() => {
+              console.log("Executing redirect NOW");
               window.location.href = "/profile";
-            }, 1500);
+            }, 1000);
+            
           } catch (error: any) {
-            console.error("Payment verification error:", error);
+            console.error("❌ Payment verification FAILED:", error);
+            console.error("Error details:", {
+              message: error.message,
+              stack: error.stack,
+              response: error.response
+            });
+            
+            alert(`Payment verification failed: ${error.message || "Unknown error"}. Your payment was processed. Please contact support.`);
+            
             toast({
               title: "Payment Verification Failed",
-              description: error.message || "Failed to verify payment. Please contact support with your payment ID.",
+              description: error.message || "Payment processed but verification failed. Contact support.",
               variant: "destructive",
             });
           }
+          
+          console.log("=== Payment handler END ===");
         },
         modal: {
           ondismiss: () => {
