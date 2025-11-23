@@ -75,6 +75,8 @@ const RazorpayPayment = ({
         order_id: bookingData.booking.razorpayOrderId,
         handler: async (response: any) => {
           try {
+            console.log("Payment handler triggered", response);
+            
             // Verify payment with backend
             const verifyResponse = await bookingsAPI.verifyPayment({
               razorpayOrderId: response.razorpay_order_id,
@@ -83,6 +85,9 @@ const RazorpayPayment = ({
               bookingId: bookingData.booking._id,
             });
 
+            console.log("Payment verified successfully", verifyResponse);
+
+            // Show success message
             toast({
               title: "Payment Successful!",
               description: "Your tickets have been booked. Redirecting to profile...",
@@ -93,16 +98,23 @@ const RazorpayPayment = ({
               onSuccess();
             }
             
-            // Redirect to user profile after a short delay
+            // Force reload to profile page to ensure state updates
             setTimeout(() => {
-              navigate("/profile");
+              window.location.href = "/profile";
             }, 1500);
           } catch (error: any) {
+            console.error("Payment verification error:", error);
             toast({
               title: "Payment Verification Failed",
-              description: error.message || "Failed to verify payment",
+              description: error.message || "Failed to verify payment. Please contact support with your payment ID.",
               variant: "destructive",
             });
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            console.log("Payment modal dismissed");
+            setLoading(false);
           }
         },
         prefill: {
