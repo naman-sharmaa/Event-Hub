@@ -102,8 +102,17 @@ export const createBooking = async (req, res) => {
 
 // Verify payment and confirm booking
 export const verifyPayment = async (req, res) => {
+  console.log('🔍 verifyPayment called');
+  console.log('Request body:', req.body);
+  
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature, bookingId } = req.body;
+    
+    console.log('📝 Payment verification data:', {
+      razorpayOrderId,
+      razorpayPaymentId,
+      bookingId
+    });
 
     // Verify signature
     const body = razorpayOrderId + '|' + razorpayPaymentId;
@@ -113,10 +122,14 @@ export const verifyPayment = async (req, res) => {
       .digest('hex');
 
     if (expectedSignature !== razorpaySignature) {
+      console.log('❌ Signature verification failed');
       return res.status(400).json({ message: 'Payment verification failed' });
     }
 
+    console.log('✅ Signature verified successfully');
+
     // Update booking
+    console.log('📦 Updating booking:', bookingId);
     const booking = await Booking.findByIdAndUpdate(
       bookingId,
       {
