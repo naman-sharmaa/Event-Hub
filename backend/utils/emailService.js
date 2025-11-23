@@ -40,7 +40,9 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
 
 // Configure email transporter with better settings and connection pooling
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -52,9 +54,13 @@ const transporter = nodemailer.createTransport({
   rateLimit: 3, // Max 3 emails per rateDelta
   tls: {
     rejectUnauthorized: false,
+    ciphers: 'SSLv3'
   },
-  debug: false,
-  logger: false,
+  connectionTimeout: 10000, // 10 second timeout
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  debug: true,
+  logger: true,
 });
 
 /**
