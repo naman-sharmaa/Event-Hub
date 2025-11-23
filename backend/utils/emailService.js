@@ -41,8 +41,8 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
 // Configure email transporter with better settings and connection pooling
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use STARTTLS
+  port: 465, // Use port 465 for SSL (port 587 is blocked on Render)
+  secure: true, // Use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -54,13 +54,12 @@ const transporter = nodemailer.createTransport({
   rateLimit: 3, // Max 3 emails per rateDelta
   tls: {
     rejectUnauthorized: false,
-    ciphers: 'SSLv3'
   },
-  connectionTimeout: 10000, // 10 second timeout
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  debug: true,
-  logger: true,
+  connectionTimeout: 15000, // 15 second timeout
+  greetingTimeout: 15000,
+  socketTimeout: 15000,
+  debug: false,
+  logger: false,
 });
 
 /**
