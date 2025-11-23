@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { google } from 'googleapis';
 import { generateTicketPDF } from './pdfService.js';
 
 // Helper function to send email with retry logic
@@ -38,31 +39,56 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
   console.error('6. Copy the 16-character password to EMAIL_PASSWORD');
 }
 
-// Configure email transporter with better settings and connection pooling
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465, // Use port 465 for SSL (port 587 is blocked on Render)
-  secure: true, // Use SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  pool: true, // Use connection pooling
-  maxConnections: 1, // Limit to 1 connection to avoid rate limiting
-  maxMessages: 3, // Max messages per connection
-  rateDelta: 1000, // Time between messages (1 second)
-  rateLimit: 3, // Max 3 emails per rateDelta
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 15000, // 15 second timeout
-  greetingTimeout: 15000,
-  socketTimeout: 15000,
-  debug: false,
-  logger: false,
-});
+// Check if Gmail API credentials are available (for production/Render)
+const useGmailAPI = !!(process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN);
 
-/**
+let transporter;
+
+if (useGmailAPI) {
+  // Use Gmail API (works on Render - uses HTTPS)
+  console.log('📧 Using Gmail API for email service (bypasses SMTP port blocking)');
+  
+  const OAuth2 = google.auth.OAuth2;
+  const oauth2Client = new OAuth2(
+    process.env.GMAIL_CLIENT_ID,
+    process.env.GMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN
+  });
+
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      type: 'OAuth2',
+      user: process.env.EMAIL_USER,
+      clientId: process.env.GMAIL_CLIENT_ID,
+      clientSecret: process.env.GMAIL_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+    },
+  });
+} else {
+  // Use SMTP (for local development)
+  console.log('📧 Using Gmail SMTP for email service (local development)');
+  
+  transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    maxMessages: 3, // Max messages per connection
+    rateDelta: 1000, // Time between messages (1 second)
+    rateLimit: 3, // Max 3 emails per rateDelta
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+}/**
  * Send booking confirmation email with ticket details and PDF to all attendees
  */
 export const sendBookingConfirmationEmail = async (booking, event, user) => {
