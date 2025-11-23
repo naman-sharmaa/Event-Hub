@@ -40,36 +40,26 @@ const app = express();
 const PORT = process.env.PORT || 5050;
 
 // Middleware
-const allowedOrigins = [
-  'http://localhost:5173', 
-  'http://localhost:8080', 
-  'http://localhost:8081',
-  'http://localhost:3000',
-];
-
-// Add production frontend URL if specified
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
-}
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? [process.env.FRONTEND_URL]
+  : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'];
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Allow any localhost port for local development
-    if (origin.startsWith('http://localhost:')) {
+    // Allow any localhost port in development
+    if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
     
     // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
-    
-    console.log(`❌ CORS blocked origin: ${origin}`);
-    console.log(`✅ Allowed origins:`, allowedOrigins);
-    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }));

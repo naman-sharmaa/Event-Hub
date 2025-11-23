@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { bookingsAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ const RazorpayPayment = ({
   onSuccess,
   onCancel,
 }: RazorpayPaymentProps) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -83,13 +85,18 @@ const RazorpayPayment = ({
 
             toast({
               title: "Payment Successful!",
-              description: "Your tickets have been booked. Check your profile to download.",
+              description: "Your tickets have been booked. Redirecting to profile...",
             });
 
+            // Call onSuccess callback
+            if (onSuccess) {
+              onSuccess();
+            }
+            
             // Redirect to user profile after a short delay
             setTimeout(() => {
-              window.location.href = "/profile";
-            }, 2000);
+              navigate("/profile");
+            }, 1500);
           } catch (error: any) {
             toast({
               title: "Payment Verification Failed",
