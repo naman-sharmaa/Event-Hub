@@ -145,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(response.user);
       toast({
         title: 'Account created!',
-        description: 'Welcome to EventHub.',
+        description: 'Welcome to GetTogether.',
       });
     } catch (error: any) {
       toast({

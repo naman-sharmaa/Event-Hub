@@ -35,7 +35,7 @@ const AdminLogin = () => {
           <div>
             <CardTitle className="text-3xl font-bold">Admin Portal</CardTitle>
             <CardDescription className="text-base mt-2">
-              EventHub Administration Dashboard
+              GetTogether Administration Dashboard
             </CardDescription>
           </div>
         </CardHeader>

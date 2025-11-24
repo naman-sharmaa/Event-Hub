@@ -150,7 +150,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       <Dialog open={open && !showForgotPassword} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-gradient-to-br from-background to-muted/20">
         <DialogHeader className="bg-gradient-primary text-white p-6 rounded-t-lg">
-          <DialogTitle className="text-2xl font-bold">Welcome to EventHub</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">Welcome to GetTogether</DialogTitle>
           <DialogDescription className="text-white/80 mt-2">
             Sign in or create an account to get started
           </DialogDescription>

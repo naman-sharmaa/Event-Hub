@@ -79,7 +79,7 @@ const RefundPolicy = () => {
               <li>Click "Request Refund" and follow the prompts</li>
             </ol>
             <p className="mt-4">
-              Alternatively, you can contact our support team at support@eventhub.com with your 
+              Alternatively, you can contact our support team at support@gettogether.com with your 
               order number and reason for refund.
             </p>
           </section>
