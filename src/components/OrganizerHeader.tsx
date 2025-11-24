@@ -12,7 +12,7 @@ const OrganizerHeader = () => {
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Calendar className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-foreground">EventBook Organizer</span>
+          <span className="text-xl font-bold text-foreground">GetTogether Organizer</span>
         </div>
 
         <nav className="hidden md:flex items-center gap-6">

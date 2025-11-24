@@ -17,7 +17,7 @@ const Organizer = () => {
         <div className="container px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Grow Your Events with EventBook
+              Grow Your Events with GetTogether
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               Join thousands of event organizers who trust us to reach wider audiences and manage their events seamlessly
@@ -62,7 +62,7 @@ const Organizer = () => {
       <section id="benefits" className="bg-gradient-subtle py-16">
         <div className="container px-4 md:px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-2">Why Choose EventBook?</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Why Choose GetTogether?</h2>
             <p className="text-muted-foreground">Everything you need to manage and grow your events</p>
           </div>
 
