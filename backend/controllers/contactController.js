@@ -167,7 +167,7 @@ export const submitContactForm = async (req, res) => {
         to: developerEmail,
         subject: emailSubject,
         html: emailHtml,
-        from: `"GetTogether Contact Form" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM || `"GetTogether Contact Form" <${process.env.EMAIL_USER}>`,
       });
       console.log(`✅ Contact form notification sent to ${developerEmail}`);
     } catch (emailError) {
@@ -248,7 +248,7 @@ export const submitContactForm = async (req, res) => {
         to: email,
         subject: confirmationSubject,
         html: confirmationHtml,
-        from: `"GetTogether" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM || `"GetTogether" <${process.env.EMAIL_USER}>`,
       });
       console.log(`✅ Confirmation email sent to ${email}`);
     } catch (emailError) {

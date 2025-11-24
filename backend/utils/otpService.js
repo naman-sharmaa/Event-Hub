@@ -73,7 +73,7 @@ export const sendOTPEmail = async (email, otp, type = 'login') => {
     } else if (transporter) {
       // Use Gmail SMTP
       await transporter.sendMail({
-        from: `"GetTogether Security" <${process.env.EMAIL_USER}>`,
+        from: process.env.EMAIL_FROM || `"GetTogether Security" <${process.env.EMAIL_USER}>`,
         to: email,
         subject,
         html: htmlContent,

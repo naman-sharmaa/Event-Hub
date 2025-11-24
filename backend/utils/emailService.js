@@ -2,6 +2,13 @@ import nodemailer from 'nodemailer';
 import * as brevo from '@getbrevo/brevo';
 import { generateTicketPDF } from './pdfService.js';
 
+// Helper function to get the sender email
+const getSenderEmail = (customName = 'GetTogether') => {
+  // Priority: EMAIL_FROM > EMAIL_USER (for backward compatibility)
+  const emailFrom = process.env.EMAIL_FROM || `"${customName}" <${process.env.EMAIL_USER}>`;
+  return emailFrom;
+};
+
 // Helper function to send email with retry logic
 const sendMailWithRetry = async (mailOptions, maxRetries = 3, delayMs = 2000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -544,7 +551,7 @@ export const sendBookingConfirmationEmail = async (booking, event, user) => {
         `;
 
         const attendeeMailOptions = {
-          from: `"GetTogether" <${process.env.EMAIL_USER}>`,
+          from: getSenderEmail('GetTogether'),
           to: attendee.email,
           subject: `🎫 Your Ticket - ${event.title}`,
           html: attendeeHtmlContent,
@@ -671,8 +678,8 @@ export const sendPaymentFailureEmail = async (user, event, reason) => {
     `;
 
     const mailOptions = {
-      from: `"GetTogether" <${process.env.EMAIL_USER}>`,
-      to: user.email,
+      from: getSenderEmail('GetTogether'),
+      to: userEmail,
       subject: `Payment Failed - ${event.title}`,
       html: htmlContent,
     };
@@ -850,7 +857,7 @@ export const sendNewsletterEmail = async (email, name, type = 'welcome', customD
     }
 
     const mailOptions = {
-      from: `"GetTogether Newsletter" <${process.env.EMAIL_USER}>`,
+      from: getSenderEmail('GetTogether Newsletter'),
       to: email,
       subject,
       html: htmlContent,
