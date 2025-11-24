@@ -22,45 +22,69 @@ const sendMailWithRetry = async (mailOptions, maxRetries = 3, delayMs = 2000) =>
   }
 };
 
-// Validate email credentials
-if (!process.env.BREVO_SMTP_KEY) {
-  console.error('❌ CRITICAL: Brevo SMTP credentials not configured!');
-  console.error('Add to .env file:');
-  console.error('  BREVO_SMTP_KEY=your-brevo-smtp-key');
-  console.error('');
-  console.error('To get Brevo SMTP Key:');
-  console.error('1. Go to https://app.brevo.com/');
-  console.error('2. Sign up for free account (300 emails/day)');
-  console.error('3. Navigate to "SMTP & API" section');
-  console.error('4. Click "SMTP" tab');
-  console.error('5. Copy your SMTP key');
-  console.error('6. Add BREVO_SMTP_KEY to your environment variables');
-}
+// Configure email transporter - use Brevo if configured, otherwise Gmail
+let transporter;
 
-// Configure email transporter with Brevo (formerly Sendinblue)
-// Brevo works reliably on all cloud platforms including Render
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false, // Use STARTTLS on port 587
-  auth: {
-    user: process.env.BREVO_SMTP_USER || process.env.EMAIL_USER || 'your-email@example.com',
-    pass: process.env.BREVO_SMTP_KEY,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  rateDelta: 1000,
-  rateLimit: 5,
-  debug: false,
-  logger: false,
-});
+if (process.env.BREVO_SMTP_KEY && process.env.BREVO_SMTP_USER) {
+  // Brevo SMTP - works reliably on cloud platforms including Render
+  console.log('📧 Using Brevo email service');
+  transporter = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.BREVO_SMTP_USER, // Must be your Brevo login email
+      pass: process.env.BREVO_SMTP_KEY,  // Your Brevo SMTP key
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    rateDelta: 1000,
+    rateLimit: 5,
+    debug: false,
+    logger: false,
+  });
+} else if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+  // Gmail SMTP - fallback for local development
+  console.log('📧 Using Gmail SMTP service');
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    tls: {
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false,
+    },
+    debug: false,
+    logger: false,
+  });
+} else {
+  console.error('❌ CRITICAL: No email credentials configured!');
+  console.error('Option 1 (Brevo - Recommended for production):');
+  console.error('  BREVO_SMTP_USER=your-brevo-login-email@example.com');
+  console.error('  BREVO_SMTP_KEY=xsmtpsib-your-key');
+  console.error('');
+  console.error('Option 2 (Gmail - For local development):');
+  console.error('  EMAIL_USER=your-gmail@gmail.com');
+  console.error('  EMAIL_PASSWORD=your-app-password');
+  
+  // Create dummy transporter to prevent crashes
+  transporter = nodemailer.createTransport({
+    streamTransport: true,
+    newline: 'unix',
+  });
+}
 
 /**
  * Send booking confirmation email with ticket details and PDF to all attendees
