@@ -42,7 +42,7 @@ const PORT = process.env.PORT || 5050;
 
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 
-  ? [process.env.FRONTEND_URL]
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
   : ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081'];
 
 app.use(cors({
