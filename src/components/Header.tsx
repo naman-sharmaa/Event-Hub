@@ -35,7 +35,7 @@ const Header = () => {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <Ticket className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold text-foreground">EventHub</span>
+              <span className="text-xl font-bold text-foreground">GetTogether</span>
             </div>
           </div>
 
