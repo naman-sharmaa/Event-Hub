@@ -864,3 +864,14 @@ export const sendNewsletterEmail = async (email, name, type = 'welcome', customD
     throw new Error('Failed to send newsletter email');
   }
 };
+
+// Generic send email function for contact forms and other use cases
+export const sendEmail = async (mailOptions) => {
+  try {
+    await sendMailWithRetry(mailOptions);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+};
