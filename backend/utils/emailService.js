@@ -25,9 +25,18 @@ const sendMailWithRetry = async (mailOptions, maxRetries = 3, delayMs = 2000) =>
 // Configure email transporter - use Brevo if configured, otherwise Gmail
 let transporter;
 
+// Debug: Log what credentials are available
+console.log('🔍 Email Service Configuration Check:');
+console.log('  BREVO_SMTP_KEY:', process.env.BREVO_SMTP_KEY ? '✅ SET' : '❌ NOT SET');
+console.log('  BREVO_SMTP_USER:', process.env.BREVO_SMTP_USER ? '✅ SET' : '❌ NOT SET');
+console.log('  EMAIL_USER:', process.env.EMAIL_USER ? '✅ SET' : '❌ NOT SET');
+console.log('  EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✅ SET' : '❌ NOT SET');
+
 if (process.env.BREVO_SMTP_KEY && process.env.BREVO_SMTP_USER) {
   // Brevo SMTP - works reliably on cloud platforms including Render
   console.log('📧 Using Brevo email service');
+  console.log('   SMTP Host: smtp-relay.brevo.com:587');
+  console.log('   SMTP User:', process.env.BREVO_SMTP_USER);
   transporter = nodemailer.createTransport({
     host: 'smtp-relay.brevo.com',
     port: 587,
@@ -52,7 +61,9 @@ if (process.env.BREVO_SMTP_KEY && process.env.BREVO_SMTP_USER) {
   });
 } else if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
   // Gmail SMTP - fallback for local development
-  console.log('📧 Using Gmail SMTP service');
+  console.log('📧 Using Gmail SMTP service (fallback)');
+  console.log('   SMTP Host: smtp.gmail.com:587');
+  console.log('   SMTP User:', process.env.EMAIL_USER);
   transporter = nodemailer.createTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',
