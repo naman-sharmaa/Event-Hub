@@ -34,8 +34,25 @@ const Header = () => {
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2">
-              <Ticket className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold text-foreground">GetTogether</span>
+              <div className="relative w-8 h-8">
+                <svg viewBox="0 0 64 64" className="w-full h-full">
+                  <defs>
+                    <linearGradient id="headerInfinityGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style={{stopColor: '#3b82f6'}} />
+                      <stop offset="50%" style={{stopColor: '#a855f7'}} />
+                      <stop offset="100%" style={{stopColor: '#ec4899'}} />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 12 32 C 12 26, 16 22, 20 22 C 24 22, 28 26, 32 32 C 36 38, 40 42, 44 42 C 48 42, 52 38, 52 32 C 52 26, 48 22, 44 22 C 40 22, 36 26, 32 32 C 28 26, 24 22, 20 22" 
+                        fill="none" 
+                        stroke="url(#headerInfinityGrad)" 
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"/>
+                  <text x="32" y="42" fontFamily="Arial" fontSize="28" fontWeight="bold" fill="currentColor" textAnchor="middle">T</text>
+                </svg>
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">GetTogether</span>
             </div>
           </div>
 
