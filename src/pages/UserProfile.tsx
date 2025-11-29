@@ -158,7 +158,13 @@ const UserProfile = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bookings.map((booking) => (
+              {bookings.map((booking) => {
+                // Check if eventId exists and is populated
+                if (!booking.eventId) {
+                  return null; // Skip this booking if event data is missing
+                }
+                
+                return (
                 <Card key={booking._id} className="overflow-hidden hover:shadow-2xl hover:border-primary/50 transition-all duration-300 border-border group">
                   {/* Event Image */}
                   {booking.eventId.imageUrl && (
@@ -253,7 +259,7 @@ const UserProfile = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           )}
         </div>

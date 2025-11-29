@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Music, Briefcase, Trophy, Theater, Calendar, Users, ArrowRight, Building2, Mail, Phone, MapPin } from "lucide-react";
+import { Music, Briefcase, Trophy, Theater, Calendar, Users, ArrowRight, Building2, Mail, Phone, MapPin, Code2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ import categoryMusic from "@/assets/category-music.jpg";
 import categoryBusiness from "@/assets/category-business.jpg";
 import categorySports from "@/assets/category-sports.jpg";
 import categoryTheater from "@/assets/category-theater.jpg";
+import categoryTech from "@/assets/event-conference.jpg";
 
 // Default images mapping
 const defaultImages: { [key: string]: string } = {
@@ -83,6 +84,7 @@ const Index = () => {
     { title: "Business & Networking", icon: Briefcase, count: 156, image: categoryBusiness },
     { title: "Sports & Recreation", icon: Trophy, count: 189, image: categorySports },
     { title: "Arts & Theater", icon: Theater, count: 134, image: categoryTheater },
+    { title: "Tech & Hackathons", icon: Code2, count: 95, image: categoryTech },
   ];
 
   const partners = [
@@ -170,7 +172,7 @@ const Index = () => {
             <h2 className="text-3xl font-bold text-foreground mb-2">Browse by Category</h2>
             <p className="text-muted-foreground">Find events that match your interests</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {categories.map((category, index) => (
               <CategoryCard key={index} {...category} />
             ))}
