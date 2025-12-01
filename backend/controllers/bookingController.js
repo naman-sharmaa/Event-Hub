@@ -511,19 +511,26 @@ export const getTicketVerificationStatus = async (req, res) => {
 // Cancel a ticket (organizer can cancel individual tickets from a booking)
 export const cancelTicket = async (req, res) => {
   try {
-    const { bookingId, ticketNumber } = req.body;
+    const { bookingId, ticketNumber, cancellationReason } = req.body;
     const organizerId = req.user.id;
 
     if (!bookingId || !ticketNumber) {
       return res.status(400).json({ message: 'Booking ID and ticket number are required' });
     }
 
+    if (!cancellationReason || !cancellationReason.trim()) {
+      return res.status(400).json({ message: 'Cancellation reason is required' });
+    }
+
     if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return res.status(400).json({ message: 'Invalid booking ID' });
     }
 
-    // Find the booking
-    const booking = await Booking.findById(bookingId).populate('eventId');
+    // Find the booking with user details
+    const booking = await Booking.findById(bookingId)
+      .populate('eventId', 'title date location organizerId organizationName')
+      .populate('userId', 'name email');
+
     if (!booking) {
       return res.status(404).json({ message: 'Booking not found' });
     }
@@ -538,33 +545,88 @@ export const cancelTicket = async (req, res) => {
       return res.status(404).json({ message: 'Ticket not found in this booking' });
     }
 
+    // Initialize ticketDetails if not present (migration for old bookings)
+    if (!booking.ticketDetails || booking.ticketDetails.length === 0) {
+      booking.ticketDetails = booking.ticketNumbers.map((tNum, index) => ({
+        ticketNumber: tNum,
+        attendeeName: booking.attendeeDetails[index]?.name || '',
+        attendeeEmail: booking.attendeeDetails[index]?.email || '',
+        attendeePhone: booking.attendeeDetails[index]?.phone || '',
+        status: 'active',
+        refundStatus: 'not_initiated',
+      }));
+    }
+
+    // Find the ticket in ticketDetails
+    const ticketIndex = booking.ticketDetails.findIndex(
+      t => t.ticketNumber === ticketNumber
+    );
+
+    if (ticketIndex === -1) {
+      return res.status(404).json({ message: 'Ticket not found in booking details' });
+    }
+
+    const ticket = booking.ticketDetails[ticketIndex];
+
     // Check if ticket is already cancelled
-    const cancelledTickets = booking.cancelledTickets || [];
-    if (cancelledTickets.includes(ticketNumber)) {
+    if (ticket.status === 'cancelled') {
       return res.status(400).json({ message: 'Ticket is already cancelled' });
     }
 
-    // Add ticket to cancelled list
+    // Calculate refund amount (per ticket price)
+    const perTicketPrice = booking.totalPrice / booking.quantity;
+
+    // Update ticket status
+    ticket.status = 'cancelled';
+    ticket.cancelledAt = new Date();
+    ticket.cancellationReason = `Organizer cancelled: ${cancellationReason}`;
+    ticket.refundStatus = 'pending';
+    ticket.refundAmount = perTicketPrice;
+
+    // Add to legacy cancelledTickets array for backward compatibility
     if (!booking.cancelledTickets) {
       booking.cancelledTickets = [];
     }
-    booking.cancelledTickets.push(ticketNumber);
+    if (!booking.cancelledTickets.includes(ticketNumber)) {
+      booking.cancelledTickets.push(ticketNumber);
+    }
+
+    // Check if all tickets are cancelled
+    const allCancelled = booking.ticketDetails.every(t => t.status === 'cancelled');
+    if (allCancelled) {
+      booking.status = 'cancelled';
+    }
 
     await booking.save();
 
-    // Refund one ticket back to event
+    // Refund ticket back to event inventory
     await Event.findByIdAndUpdate(
       booking.eventId._id,
       { $inc: { availableTickets: 1 } },
       { new: true }
     );
 
+    // Import email service and send notifications
+    const { sendOrganizerCancellationEmails } = await import('../utils/emailService.js');
+    await sendOrganizerCancellationEmails(booking, ticket, booking.eventId);
+
     res.json({
-      message: 'Ticket cancelled successfully',
+      message: 'Ticket cancelled successfully. User has been notified.',
       booking: {
         _id: booking._id,
         cancelledTickets: booking.cancelledTickets,
       },
+      ticket: {
+        ticketNumber: ticket.ticketNumber,
+        status: ticket.status,
+        refundAmount: ticket.refundAmount,
+      },
+    });
+  } catch (error) {
+    console.error('Cancel ticket error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
     });
   } catch (error) {
     console.error('Cancel ticket error:', error);

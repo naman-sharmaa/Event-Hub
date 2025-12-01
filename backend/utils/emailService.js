@@ -1198,3 +1198,230 @@ export const sendTicketCancellationEmails = async (booking, ticket, event) => {
     return false;
   }
 };
+
+// Send ticket cancellation emails when organizer cancels a ticket
+export const sendOrganizerCancellationEmails = async (booking, ticket, event) => {
+  try {
+    const eventDate = new Date(event.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    // Extract the organizer's reason from the cancellation reason
+    const organizerReason = ticket.cancellationReason?.replace('Organizer cancelled: ', '') || 'Event management decision';
+
+    // 1. Send notification email to user
+    const userEmailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .ticket-box { background: white; border: 2px dashed #dc3545; padding: 20px; margin: 20px 0; border-radius: 8px; }
+          .info-row { display: flex; justify-content: space-between; margin: 10px 0; padding: 10px 0; border-bottom: 1px solid #eee; }
+          .label { font-weight: bold; color: #dc3545; }
+          .value { color: #555; }
+          .alert-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+          .refund-notice { background: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 20px 0; color: #0c5460; }
+          .footer { text-align: center; margin-top: 20px; color: #777; font-size: 12px; }
+          .cancelled-badge { background: #dc3545; color: white; padding: 5px 15px; border-radius: 20px; display: inline-block; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>⚠️ Ticket Cancelled by Organizer</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${booking.userId.name},</p>
+            
+            <div class="alert-box">
+              <p style="margin: 0; font-weight: bold;">We regret to inform you that your ticket has been cancelled by the event organizer.</p>
+            </div>
+            
+            <div class="ticket-box">
+              <div style="text-align: center; margin-bottom: 15px;">
+                <span class="cancelled-badge">CANCELLED BY ORGANIZER</span>
+              </div>
+              <h3 style="color: #dc3545; margin-top: 0;">Cancelled Ticket Details</h3>
+              <div class="info-row">
+                <span class="label">Ticket Number:</span>
+                <span class="value">${ticket.ticketNumber}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Event:</span>
+                <span class="value">${event.title}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Event Date:</span>
+                <span class="value">${eventDate}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Location:</span>
+                <span class="value">${event.location}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Attendee:</span>
+                <span class="value">${ticket.attendeeName}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Cancellation Date:</span>
+                <span class="value">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
+            </div>
+
+            <div style="background: white; padding: 15px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #dc3545;">
+              <p style="margin: 0; font-weight: bold; color: #dc3545;">Cancellation Reason:</p>
+              <p style="margin: 10px 0 0 0; color: #555;">${organizerReason}</p>
+            </div>
+
+            <div class="refund-notice">
+              <h4 style="margin-top: 0; color: #0c5460;">💰 Refund Information</h4>
+              <p style="margin: 5px 0;"><strong>Refund Amount:</strong> ₹${ticket.refundAmount?.toFixed(2)}</p>
+              <p style="margin: 5px 0;"><strong>Refund Status:</strong> Processing</p>
+              <p style="margin: 10px 0 0 0;">Your full refund will be processed within <strong>5-7 business days</strong>. The amount will be credited to your original payment method.</p>
+            </div>
+
+            <p style="margin-top: 30px;">We sincerely apologize for any inconvenience this may cause. If you have any questions or concerns, please don't hesitate to contact our support team or the event organizer.</p>
+            
+            <p>Thank you for your understanding.</p>
+            
+            <div class="footer">
+              <p>This is an automated email. Please do not reply.</p>
+              <p>&copy; ${new Date().getFullYear()} GetTogether. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const userMailOptions = {
+      from: getSenderEmail('GetTogether'),
+      to: booking.userId.email,
+      subject: `Ticket Cancelled by Organizer - ${event.title}`,
+      html: userEmailHtml,
+    };
+
+    await sendMailWithRetry(userMailOptions);
+    console.log(`✅ Organizer cancellation notification sent to user: ${booking.userId.email}`);
+
+    // 2. Send notification to admin
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    if (adminEmail) {
+      const adminEmailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+            .info-section { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #667eea; }
+            .info-row { margin: 8px 0; }
+            .label { font-weight: bold; color: #667eea; display: inline-block; min-width: 150px; }
+            .value { color: #555; }
+            .alert { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔔 Admin Alert: Organizer Cancelled Ticket</h1>
+            </div>
+            <div class="content">
+              <p>Hello Admin,</p>
+              
+              <div class="alert">
+                <p style="margin: 0; font-weight: bold;">An organizer has cancelled a ticket. User has been notified.</p>
+              </div>
+              
+              <div class="info-section">
+                <h3 style="color: #667eea; margin-top: 0;">Booking Information</h3>
+                <div class="info-row">
+                  <span class="label">Booking ID:</span>
+                  <span class="value">${booking._id}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Customer:</span>
+                  <span class="value">${booking.userId.name} (${booking.userId.email})</span>
+                </div>
+              </div>
+              
+              <div class="info-section">
+                <h3 style="color: #667eea; margin-top: 0;">Event Information</h3>
+                <div class="info-row">
+                  <span class="label">Event:</span>
+                  <span class="value">${event.title}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Event Date:</span>
+                  <span class="value">${eventDate}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Organization:</span>
+                  <span class="value">${event.organizationName || 'N/A'}</span>
+                </div>
+              </div>
+              
+              <div class="info-section">
+                <h3 style="color: #667eea; margin-top: 0;">Cancelled Ticket</h3>
+                <div class="info-row">
+                  <span class="label">Ticket Number:</span>
+                  <span class="value">${ticket.ticketNumber}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Attendee:</span>
+                  <span class="value">${ticket.attendeeName} (${ticket.attendeeEmail})</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Refund Amount:</span>
+                  <span class="value">₹${ticket.refundAmount?.toFixed(2)}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Cancelled By:</span>
+                  <span class="value">Organizer</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Cancellation Date:</span>
+                  <span class="value">${new Date().toLocaleString('en-US')}</span>
+                </div>
+              </div>
+              
+              <div class="info-section">
+                <h3 style="color: #667eea; margin-top: 0;">Organizer's Reason</h3>
+                <p style="margin: 0; color: #555;">${organizerReason}</p>
+              </div>
+              
+              <p style="margin-top: 30px; font-size: 12px; color: #777;">This is an automated system notification. User has been notified about the cancellation.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const adminMailOptions = {
+        from: getSenderEmail('GetTogether System'),
+        to: adminEmail,
+        subject: `[Admin Alert] Organizer Cancelled Ticket - ${event.title}`,
+        html: adminEmailHtml,
+      };
+
+      await sendMailWithRetry(adminMailOptions);
+      console.log(`✅ Organizer cancellation notification sent to admin: ${adminEmail}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error sending organizer cancellation emails:', error);
+    // Don't throw error - allow cancellation to proceed even if emails fail
+    return false;
+  }
+};

@@ -311,10 +311,10 @@ export const bookingsAPI = {
     return apiRequest<{ ticketNumber: string; isVerified: boolean; verifiedAt: string | null }>(`/bookings/ticket-status?ticketNumber=${ticketNumber}&bookingId=${bookingId}`);
   },
 
-  cancelTicket: async (bookingId: string, ticketNumber: string) => {
-    return apiRequest<{ booking: any; message: string }>('/bookings/cancel-ticket', {
+  cancelTicket: async (bookingId: string, ticketNumber: string, cancellationReason?: string) => {
+    return apiRequest<{ booking: any; ticket: any; message: string }>('/bookings/cancel-ticket', {
       method: 'POST',
-      body: JSON.stringify({ bookingId, ticketNumber }),
+      body: JSON.stringify({ bookingId, ticketNumber, cancellationReason }),
     });
   },
 

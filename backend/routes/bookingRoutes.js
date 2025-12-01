@@ -37,6 +37,12 @@ const verifyTicketValidation = [
   body('bookingId').notEmpty().withMessage('Booking ID is required'),
 ];
 
+const cancelTicketValidation = [
+  body('ticketNumber').notEmpty().withMessage('Ticket number is required'),
+  body('bookingId').notEmpty().withMessage('Booking ID is required'),
+  body('cancellationReason').notEmpty().withMessage('Cancellation reason is required'),
+];
+
 // Specific routes MUST come before generic :id routes
 // Protected routes (user)
 router.post('/', authenticate, authorize('user'), createBookingValidation, createBooking);
@@ -47,7 +53,7 @@ router.post('/cancel-user-ticket', authenticate, authorize('user'), cancelUserTi
 // Protected routes (organizer) - specific routes before :id
 router.get('/organizer/all-bookings', authenticate, authorize('organizer'), getOrganizerBookings);
 router.post('/verify-ticket', authenticate, authorize('organizer'), verifyTicketValidation, verifyTicket);
-router.post('/cancel-ticket', authenticate, authorize('organizer'), cancelTicket);
+router.post('/cancel-ticket', authenticate, authorize('organizer'), cancelTicketValidation, cancelTicket);
 router.get('/ticket-status', authenticate, authorize('organizer'), getTicketVerificationStatus);
 router.get('/event/:eventId/bookings', authenticate, authorize('organizer'), getEventBookings);
 

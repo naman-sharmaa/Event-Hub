@@ -3,9 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { bookingsAPI } from "@/lib/api";
-import { QrCode, Search, CheckCircle, XCircle, Loader2, Camera, X, Trash2 } from "lucide-react";
+import { QrCode, Search, CheckCircle, XCircle, Loader2, Camera, X, Trash2, AlertCircle } from "lucide-react";
 import jsQR from "jsqr";
 
 interface Ticket {
@@ -32,6 +42,10 @@ const TicketsVerification = () => {
   } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isScannerActive, setIsScannerActive] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [ticketToCancel, setTicketToCancel] = useState<{ ticketNumber: string; bookingId: string } | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -141,19 +155,42 @@ const TicketsVerification = () => {
     const ticket = tickets.find(t => t.ticketNumber === ticketNumber);
     if (!ticket) return;
 
+    // Open dialog for cancellation reason
+    setTicketToCancel({ ticketNumber, bookingId });
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancelTicket = async () => {
+    if (!ticketToCancel) return;
+
+    if (!cancellationReason.trim()) {
+      toast({
+        title: "Reason Required",
+        description: "Please provide a reason for cancelling this ticket",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await bookingsAPI.cancelTicket(bookingId, ticketNumber);
+      setIsCancelling(true);
+      await bookingsAPI.cancelTicket(ticketToCancel.bookingId, ticketToCancel.ticketNumber, cancellationReason);
       
       toast({
         title: "Success",
-        description: `Ticket ${ticketNumber} has been cancelled successfully`,
+        description: `Ticket ${ticketToCancel.ticketNumber} has been cancelled. User has been notified.`,
         variant: "default",
       });
       
       // Update ticket status to cancelled
       setTickets(tickets.map(t =>
-        t.ticketNumber === ticketNumber ? { ...t, isCancelled: true } : t
+        t.ticketNumber === ticketToCancel.ticketNumber ? { ...t, isCancelled: true } : t
       ));
+
+      // Close dialog and reset
+      setCancelDialogOpen(false);
+      setTicketToCancel(null);
+      setCancellationReason("");
     } catch (error: any) {
       console.error('Cancel ticket error:', error);
       toast({
@@ -161,6 +198,8 @@ const TicketsVerification = () => {
         description: error.message || "Failed to cancel ticket",
         variant: "destructive",
       });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -456,6 +495,84 @@ const TicketsVerification = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Cancellation Reason Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              Cancel Ticket
+            </DialogTitle>
+            <DialogDescription>
+              Please provide a reason for cancelling this ticket. The user will be notified about this cancellation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {ticketToCancel && (
+              <div className="p-3 bg-secondary/30 rounded-lg">
+                <p className="text-sm text-muted-foreground">Ticket Number:</p>
+                <p className="font-mono font-semibold">{ticketToCancel.ticketNumber}</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="cancellation-reason">
+                Cancellation Reason <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="cancellation-reason"
+                placeholder="e.g., Event postponed, Technical issues, Venue unavailable..."
+                value={cancellationReason}
+                onChange={(e) => setCancellationReason(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                This reason will be sent to the ticket holder via email.
+              </p>
+            </div>
+
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                <strong>Note:</strong> The ticket holder will receive a full refund within 5-7 business days.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false);
+                setTicketToCancel(null);
+                setCancellationReason("");
+              }}
+              disabled={isCancelling}
+            >
+              Keep Ticket
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmCancelTicket}
+              disabled={isCancelling || !cancellationReason.trim()}
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Confirm Cancellation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
