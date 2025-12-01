@@ -11,7 +11,7 @@ const OrganizerHeader = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/organizer")}>
             <div className="h-10 flex items-center">
               <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" className="h-full w-auto">
                 <path d="M0 0 C165 0 330 0 500 0 C500 165 500 330 500 500 C335 500 170 500 0 500 C0 335 0 170 0 0 Z " fill="#100C28" transform="translate(0,0)"/>

@@ -23,7 +23,7 @@ import categoryMusic from "@/assets/category-music.jpg";
 import categoryBusiness from "@/assets/category-business.jpg";
 import categorySports from "@/assets/category-sports.jpg";
 import categoryTheater from "@/assets/category-theater.jpg";
-import categoryTech from "@/assets/event-conference.jpg";
+import categoryTech from "@/assets/category-hackathon.jpg";
 
 // Default images mapping
 const defaultImages: { [key: string]: string } = {
