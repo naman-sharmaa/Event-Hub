@@ -627,12 +627,6 @@ export const cancelTicket = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-    });
-  } catch (error) {
-    console.error('Cancel ticket error:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
 
 // User cancels their own ticket
 export const cancelUserTicket = async (req, res) => {
