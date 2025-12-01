@@ -18,7 +18,10 @@ const AnalyticsDashboard = () => {
     totalRevenue: 0,
     totalTickets: 0,
     soldTickets: 0,
+    cancelledTickets: 0,
+    refundAmount: 0,
   });
+  const [recentCancellations, setRecentCancellations] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -52,7 +55,11 @@ const AnalyticsDashboard = () => {
         totalRevenue: totalRevenue,
         totalTickets,
         soldTickets: totalSoldTickets,
+        cancelledTickets: bookingsResponse.totalCancelledTickets || 0,
+        refundAmount: bookingsResponse.totalRefundAmount || 0,
       });
+      
+      setRecentCancellations(bookingsResponse.recentCancellations || []);
     } catch (error: any) {
       toast({
         title: "Error loading analytics",
@@ -268,6 +275,72 @@ const AnalyticsDashboard = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Cancellations Section */}
+      {(stats.cancelledTickets > 0 || recentCancellations.length > 0) && (
+        <Card className="border-red-500/30 shadow-lg bg-card">
+          <CardHeader className="bg-gradient-to-r from-red-500/10 to-red-600/5 rounded-t-lg border-b border-red-500/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-red-500 rotate-180" />
+                  Ticket Cancellations
+                </CardTitle>
+                <CardDescription>Recent ticket cancellations and refunds</CardDescription>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-red-600">{stats.cancelledTickets}</p>
+                <p className="text-xs text-muted-foreground">Cancelled Tickets</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Refund Amount</p>
+                  <p className="text-2xl font-bold text-red-600">₹{stats.refundAmount.toLocaleString('en-IN')}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-red-500" />
+              </div>
+            </div>
+
+            {recentCancellations.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-foreground mb-3">Recent Cancellations</h4>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {recentCancellations.map((cancellation: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-3 border border-border rounded-lg hover:border-red-500/30 hover:bg-red-500/5 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{cancellation.eventTitle}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Customer: {cancellation.customerName}
+                          </p>
+                          <p className="text-xs font-mono text-muted-foreground mt-1">
+                            Ticket: {cancellation.ticketNumber}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-red-600">
+                            -₹{cancellation.refundAmount?.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(cancellation.cancelledAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

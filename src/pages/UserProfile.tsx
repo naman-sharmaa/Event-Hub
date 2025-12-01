@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { bookingsAPI } from "@/lib/api";
-import { Calendar, MapPin, Ticket, Download, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Ticket, Download, Loader2, Eye, Clock, XCircle } from "lucide-react";
 import { downloadTicketPDF } from "@/utils/ticketGenerator";
+import TicketDetailModal from "@/components/TicketDetailModal";
 
 const UserProfile = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -18,6 +19,9 @@ const UserProfile = () => {
 
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -83,6 +87,49 @@ const UserProfile = () => {
         description: error.message || "Failed to download ticket",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleViewTicket = (booking: any, ticketDetail: any) => {
+    setSelectedTicket(ticketDetail);
+    setSelectedBooking(booking);
+    setModalOpen(true);
+  };
+
+  const handleCancelTicket = async (ticketNumber: string, reason: string) => {
+    if (!selectedBooking) return;
+
+    try {
+      const response = await bookingsAPI.cancelUserTicket(
+        selectedBooking._id,
+        ticketNumber,
+        reason
+      );
+
+      toast({
+        title: "Ticket Cancelled",
+        description: response.message || "Your ticket has been cancelled successfully. Refund will be processed within 5-7 business days.",
+      });
+
+      // Refresh bookings
+      await fetchBookings();
+    } catch (error: any) {
+      throw error; // Let modal handle the error display
+    }
+  };
+
+  const getTicketStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30">✓ Active</Badge>;
+      case 'expired':
+        return <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-500/30"><Clock className="h-3 w-3 mr-1" />Expired</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30"><XCircle className="h-3 w-3 mr-1" />Cancelled</Badge>;
+      case 'used':
+        return <Badge className="bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30">✓ Used</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
@@ -215,16 +262,34 @@ const UserProfile = () => {
                       </div>
                     </div>
 
-                    {/* Ticket Numbers */}
+                    {/* Ticket Numbers with Status */}
                     <div className="bg-secondary/30 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-muted-foreground mb-2">Ticket Numbers</p>
-                      <div className="space-y-1">
-                        {booking.ticketNumbers.map((ticketNum: string, index: number) => (
-                          <p key={index} className="text-sm font-mono bg-background px-2 py-1 rounded">
-                            {ticketNum}
-                          </p>
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Your Tickets</p>
+                      <div className="space-y-2">
+                        {(booking.ticketDetails && booking.ticketDetails.length > 0 
+                          ? booking.ticketDetails 
+                          : booking.ticketNumbers.map((tNum: string, idx: number) => ({
+                              ticketNumber: tNum,
+                              attendeeName: booking.attendeeDetails[idx]?.name || '',
+                              attendeeEmail: booking.attendeeDetails[idx]?.email || '',
+                              attendeePhone: booking.attendeeDetails[idx]?.phone || '',
+                              status: 'active',
+                            }))
+                        ).map((ticket: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-background px-3 py-2 rounded border border-border hover:border-primary/50 cursor-pointer transition-all group"
+                            onClick={() => handleViewTicket(booking, ticket)}
+                          >
+                            <div className="flex items-center gap-2 flex-1">
+                              <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <span className="text-sm font-mono">{ticket.ticketNumber}</span>
+                            </div>
+                            {getTicketStatusBadge(ticket.status)}
+                          </div>
                         ))}
                       </div>
+                      <p className="text-xs text-muted-foreground mt-2">Click on a ticket to view details or cancel</p>
                     </div>
 
                     {/* Attendees */}
@@ -266,6 +331,16 @@ const UserProfile = () => {
       </div>
 
       <Footer />
+
+      {/* Ticket Detail Modal */}
+      <TicketDetailModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        ticket={selectedTicket}
+        booking={selectedBooking}
+        onCancelTicket={handleCancelTicket}
+        onDownloadTicket={() => selectedBooking && handleDownloadTicket(selectedBooking)}
+      />
     </div>
   );
 };

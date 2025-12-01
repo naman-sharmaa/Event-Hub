@@ -317,5 +317,12 @@ export const bookingsAPI = {
       body: JSON.stringify({ bookingId, ticketNumber }),
     });
   },
+
+  cancelUserTicket: async (bookingId: string, ticketNumber: string, cancellationReason?: string) => {
+    return apiRequest<{ ticket: any; message: string }>('/bookings/cancel-user-ticket', {
+      method: 'POST',
+      body: JSON.stringify({ bookingId, ticketNumber, cancellationReason }),
+    });
+  },
 };
 

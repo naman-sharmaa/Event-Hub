@@ -195,10 +195,42 @@ export const verifyPayment = async (req, res) => {
 export const getUserBookings = async (req, res) => {
   try {
     const userId = req.user.id;
+    const now = new Date();
 
     const bookings = await Booking.find({ userId, status: 'confirmed' })
       .populate('eventId', 'title date location price category imageUrl')
       .sort({ createdAt: -1 });
+
+    // Check and update expired tickets
+    for (const booking of bookings) {
+      if (!booking.eventId) continue;
+
+      const eventDate = new Date(booking.eventId.date);
+      
+      // Initialize ticketDetails if not present
+      if (!booking.ticketDetails || booking.ticketDetails.length === 0) {
+        booking.ticketDetails = booking.ticketNumbers.map((tNum, index) => ({
+          ticketNumber: tNum,
+          attendeeName: booking.attendeeDetails[index]?.name || '',
+          attendeeEmail: booking.attendeeDetails[index]?.email || '',
+          attendeePhone: booking.attendeeDetails[index]?.phone || '',
+          status: 'active',
+          refundStatus: 'not_initiated',
+        }));
+      }
+
+      // If event has passed and not yet marked as expired, update it
+      if (eventDate < now && !booking.isExpired) {
+        booking.ticketDetails.forEach(ticket => {
+          if (ticket.status === 'active') {
+            ticket.status = 'expired';
+          }
+        });
+        booking.isExpired = true;
+        booking.expiryCheckedAt = now;
+        await booking.save();
+      }
+    }
 
     res.json({ bookings });
   } catch (error) {
@@ -343,10 +375,42 @@ export const getOrganizerBookings = async (req, res) => {
       .populate('eventId', 'title date location organizationName')
       .sort({ createdAt: -1 });
 
+    // Calculate cancellation statistics
+    let totalCancelledTickets = 0;
+    let totalRefundAmount = 0;
+    const recentCancellations = [];
+
+    bookings.forEach(booking => {
+      if (booking.ticketDetails && booking.ticketDetails.length > 0) {
+        booking.ticketDetails.forEach(ticket => {
+          if (ticket.status === 'cancelled') {
+            totalCancelledTickets++;
+            totalRefundAmount += ticket.refundAmount || 0;
+            
+            // Add to recent cancellations (limit to 10 most recent)
+            if (recentCancellations.length < 10) {
+              recentCancellations.push({
+                ticketNumber: ticket.ticketNumber,
+                eventTitle: booking.eventId.title,
+                customerName: booking.userId.name,
+                cancelledAt: ticket.cancelledAt,
+                refundAmount: ticket.refundAmount,
+              });
+            }
+          }
+        });
+      }
+    });
+
     res.json({
       bookings,
       totalBookings: bookings.length,
       totalTickets: bookings.reduce((sum, b) => sum + b.quantity, 0),
+      totalCancelledTickets,
+      totalRefundAmount,
+      recentCancellations: recentCancellations.sort((a, b) => 
+        new Date(b.cancelledAt) - new Date(a.cancelledAt)
+      ),
     });
   } catch (error) {
     console.error('Get organizer bookings error:', error);
@@ -504,6 +568,178 @@ export const cancelTicket = async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel ticket error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// User cancels their own ticket
+export const cancelUserTicket = async (req, res) => {
+  try {
+    const { bookingId, ticketNumber, cancellationReason } = req.body;
+    const userId = req.user.id;
+
+    if (!bookingId || !ticketNumber) {
+      return res.status(400).json({ message: 'Booking ID and ticket number are required' });
+    }
+
+    // Find booking
+    const booking = await Booking.findById(bookingId)
+      .populate('eventId', 'title date location organizerId organizationName')
+      .populate('userId', 'name email');
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Verify user owns this booking
+    if (booking.userId._id.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized to cancel this ticket' });
+    }
+
+    // Check if event has already passed
+    const eventDate = new Date(booking.eventId.date);
+    const now = new Date();
+    
+    // Check if booking has ticketDetails array
+    if (!booking.ticketDetails || booking.ticketDetails.length === 0) {
+      // Migrate old data to new structure if needed
+      booking.ticketDetails = booking.ticketNumbers.map((tNum, index) => ({
+        ticketNumber: tNum,
+        attendeeName: booking.attendeeDetails[index]?.name || '',
+        attendeeEmail: booking.attendeeDetails[index]?.email || '',
+        attendeePhone: booking.attendeeDetails[index]?.phone || '',
+        status: 'active',
+        refundStatus: 'not_initiated',
+      }));
+    }
+
+    // Find the ticket in ticketDetails
+    const ticketIndex = booking.ticketDetails.findIndex(
+      t => t.ticketNumber === ticketNumber
+    );
+
+    if (ticketIndex === -1) {
+      return res.status(404).json({ message: 'Ticket not found in booking' });
+    }
+
+    const ticket = booking.ticketDetails[ticketIndex];
+
+    // Check if ticket is already cancelled
+    if (ticket.status === 'cancelled') {
+      return res.status(400).json({ message: 'Ticket is already cancelled' });
+    }
+
+    // Check if ticket has expired
+    if (ticket.status === 'expired') {
+      return res.status(400).json({ message: 'Cannot cancel an expired ticket' });
+    }
+
+    // Calculate refund amount (per ticket price)
+    const perTicketPrice = booking.totalPrice / booking.quantity;
+    
+    // Update ticket status
+    ticket.status = 'cancelled';
+    ticket.cancelledAt = new Date();
+    ticket.cancellationReason = cancellationReason || 'User requested cancellation';
+    ticket.refundStatus = 'pending';
+    ticket.refundAmount = perTicketPrice;
+
+    // Also add to legacy cancelledTickets array for backward compatibility
+    if (!booking.cancelledTickets) {
+      booking.cancelledTickets = [];
+    }
+    if (!booking.cancelledTickets.includes(ticketNumber)) {
+      booking.cancelledTickets.push(ticketNumber);
+    }
+
+    // Check if all tickets are cancelled
+    const allCancelled = booking.ticketDetails.every(t => t.status === 'cancelled');
+    if (allCancelled) {
+      booking.status = 'cancelled';
+    }
+
+    await booking.save();
+
+    // Return ticket to event inventory
+    await Event.findByIdAndUpdate(
+      booking.eventId._id,
+      { $inc: { availableTickets: 1 } },
+      { new: true }
+    );
+
+    // Import email service dynamically to avoid circular dependencies
+    const { sendTicketCancellationEmails } = await import('../utils/emailService.js');
+    
+    // Send cancellation emails (user, organizer, admin)
+    await sendTicketCancellationEmails(booking, ticket, booking.eventId);
+
+    res.json({
+      message: 'Ticket cancelled successfully. Refund will be processed within 5-7 business days.',
+      ticket: {
+        ticketNumber: ticket.ticketNumber,
+        status: ticket.status,
+        refundAmount: ticket.refundAmount,
+        refundStatus: ticket.refundStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Cancel user ticket error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Check and update expired tickets
+export const checkExpiredTickets = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Find all confirmed bookings with events that have passed
+    const bookings = await Booking.find({
+      status: { $in: ['confirmed', 'pending'] },
+      isExpired: { $ne: true },
+    }).populate('eventId', 'date');
+
+    let updatedCount = 0;
+
+    for (const booking of bookings) {
+      if (!booking.eventId) continue;
+
+      const eventDate = new Date(booking.eventId.date);
+      
+      // If event has passed, mark tickets as expired
+      if (eventDate < now) {
+        // Initialize ticketDetails if not present
+        if (!booking.ticketDetails || booking.ticketDetails.length === 0) {
+          booking.ticketDetails = booking.ticketNumbers.map((tNum, index) => ({
+            ticketNumber: tNum,
+            attendeeName: booking.attendeeDetails[index]?.name || '',
+            attendeeEmail: booking.attendeeDetails[index]?.email || '',
+            attendeePhone: booking.attendeeDetails[index]?.phone || '',
+            status: 'active',
+            refundStatus: 'not_initiated',
+          }));
+        }
+
+        // Mark all active tickets as expired
+        booking.ticketDetails.forEach(ticket => {
+          if (ticket.status === 'active') {
+            ticket.status = 'expired';
+          }
+        });
+
+        booking.isExpired = true;
+        booking.expiryCheckedAt = now;
+        await booking.save();
+        updatedCount++;
+      }
+    }
+
+    res.json({
+      message: `Checked and updated ${updatedCount} expired bookings`,
+      updatedCount,
+    });
+  } catch (error) {
+    console.error('Check expired tickets error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

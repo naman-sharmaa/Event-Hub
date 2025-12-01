@@ -11,6 +11,8 @@ import {
   verifyTicket,
   getTicketVerificationStatus,
   cancelTicket,
+  cancelUserTicket,
+  checkExpiredTickets,
 } from '../controllers/bookingController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -40,6 +42,7 @@ const verifyTicketValidation = [
 router.post('/', authenticate, authorize('user'), createBookingValidation, createBooking);
 router.get('/my-bookings', authenticate, authorize('user'), getUserBookings);
 router.post('/verify-payment', authenticate, authorize('user'), verifyPaymentValidation, verifyPayment);
+router.post('/cancel-user-ticket', authenticate, authorize('user'), cancelUserTicket);
 
 // Protected routes (organizer) - specific routes before :id
 router.get('/organizer/all-bookings', authenticate, authorize('organizer'), getOrganizerBookings);
@@ -47,6 +50,9 @@ router.post('/verify-ticket', authenticate, authorize('organizer'), verifyTicket
 router.post('/cancel-ticket', authenticate, authorize('organizer'), cancelTicket);
 router.get('/ticket-status', authenticate, authorize('organizer'), getTicketVerificationStatus);
 router.get('/event/:eventId/bookings', authenticate, authorize('organizer'), getEventBookings);
+
+// System/cron route for checking expired tickets
+router.post('/check-expired', checkExpiredTickets);
 
 // Generic routes - MUST be last
 router.get('/:id', authenticate, authorize('user'), getBookingDetails);

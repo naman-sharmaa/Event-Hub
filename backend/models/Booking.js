@@ -45,6 +45,29 @@ const bookingSchema = new mongoose.Schema({
     email: String,
     phone: String,
   }],
+  // Individual ticket status tracking
+  ticketDetails: [{
+    ticketNumber: {
+      type: String,
+      required: true,
+    },
+    attendeeName: String,
+    attendeeEmail: String,
+    attendeePhone: String,
+    status: {
+      type: String,
+      enum: ['active', 'expired', 'cancelled', 'used'],
+      default: 'active',
+    },
+    cancelledAt: Date,
+    cancellationReason: String,
+    refundStatus: {
+      type: String,
+      enum: ['not_initiated', 'pending', 'processed', 'completed'],
+      default: 'not_initiated',
+    },
+    refundAmount: Number,
+  }],
   // PDF and download
   pdfUrl: String,
   downloadCount: {
@@ -68,8 +91,14 @@ const bookingSchema = new mongoose.Schema({
       default: 'approved',
     },
   }],
-  // Cancelled tickets tracking
+  // Cancelled tickets tracking (legacy - kept for backward compatibility)
   cancelledTickets: [String],
+  // Event expiry tracking
+  isExpired: {
+    type: Boolean,
+    default: false,
+  },
+  expiryCheckedAt: Date,
 }, {
   timestamps: true,
 });
