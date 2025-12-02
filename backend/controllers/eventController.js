@@ -114,14 +114,13 @@ export const createEvent = async (req, res) => {
       });
     }
 
-    // If an image file was uploaded via multipart/form-data, use that
+    // If an image file was uploaded via multipart/form-data, use Cloudinary URL
     let finalImageUrl = imageUrl;
     if (req.file) {
-      // Stored under /public/uploads/events
-      finalImageUrl = `/uploads/events/${req.file.filename}`;
-      console.log('📸 Image uploaded:', req.file.filename);
+      // Cloudinary returns the secure URL of the uploaded image
+      finalImageUrl = req.file.path; // This is the Cloudinary URL
+      console.log('📸 Image uploaded to Cloudinary');
       console.log('📍 Image URL saved to DB:', finalImageUrl);
-      console.log('🗂️  File stored at:', req.file.path);
     }
 
     const event = await Event.create({
@@ -176,10 +175,10 @@ export const updateEvent = async (req, res) => {
       bookingExpiry,
     } = req.body;
 
-    // If an image file was uploaded via multipart/form-data, use that
+    // If an image file was uploaded via multipart/form-data, use Cloudinary URL
     let finalImageUrl = imageUrl;
     if (req.file) {
-      finalImageUrl = `/uploads/events/${req.file.filename}`;
+      finalImageUrl = req.file.path; // Cloudinary URL
     }
 
     // Update only provided fields
