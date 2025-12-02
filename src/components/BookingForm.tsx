@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { bookingsAPI } from "@/lib/api";
 import { Minus, Plus, Loader2 } from "lucide-react";
 import RazorpayPayment from "./RazorpayPayment";
+import { isValidPhoneNumber, parsePhoneNumber } from "libphonenumber-js";
 
 interface BookingFormProps {
   event: any;
@@ -71,6 +72,20 @@ const BookingForm = ({ event, onClose }: BookingFormProps) => {
         toast({
           title: "Invalid Email",
           description: `Please enter a valid email for attendee ${i + 1}`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      // Phone validation
+      let phoneToValidate = phone.trim();
+      if (!phoneToValidate.startsWith('+')) {
+        // Default to India country code if no + prefix
+        phoneToValidate = '+91' + phoneToValidate;
+      }
+      if (!isValidPhoneNumber(phoneToValidate)) {
+        toast({
+          title: "Invalid Phone Number",
+          description: `Please enter a valid phone number for attendee ${i + 1}. Use format: +919876543210 or 9876543210`,
           variant: "destructive",
         });
         return false;
@@ -164,7 +179,7 @@ const BookingForm = ({ event, onClose }: BookingFormProps) => {
                 className="text-sm"
               />
               <Input
-                placeholder="Phone Number"
+                placeholder="Phone Number (e.g., +919876543210 or 9876543210)"
                 value={attendee.phone}
                 onChange={(e) => handleAttendeeChange(index, "phone", e.target.value)}
                 className="text-sm"

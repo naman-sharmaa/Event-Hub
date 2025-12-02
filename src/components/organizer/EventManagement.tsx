@@ -17,6 +17,7 @@ const EventManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -83,6 +84,7 @@ const EventManagement = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingEvent(null);
+    setImageFile(null);
     setFormData({
       title: "",
       description: "",
@@ -110,7 +112,7 @@ const EventManagement = () => {
           imageUrl: formData.imageUrl,
           totalTickets: parseInt(formData.totalTickets) || 0,
           bookingExpiry: new Date(formData.bookingExpiry).toISOString(),
-        });
+        }, imageFile || undefined);
         toast({
           title: "Event updated!",
           description: "Your event has been updated successfully.",
@@ -126,7 +128,7 @@ const EventManagement = () => {
           imageUrl: formData.imageUrl,
           totalTickets: parseInt(formData.totalTickets) || 0,
           bookingExpiry: new Date(formData.bookingExpiry).toISOString(),
-        });
+        }, imageFile || undefined);
         toast({
           title: "Event created!",
           description: "Your event has been created successfully.",
@@ -290,14 +292,19 @@ const EventManagement = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Label htmlFor="imageFile">Event Image</Label>
                   <Input
-                    id="imageUrl"
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                      }
+                    }}
                   />
+                  <p className="text-xs text-muted-foreground">Upload a custom image for your event</p>
                 </div>
               </div>
 

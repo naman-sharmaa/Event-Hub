@@ -181,7 +181,38 @@ export const eventsAPI = {
     imageUrl?: string;
     totalTickets?: number;
     bookingExpiry: string;
-  }) => {
+  }, imageFile?: File) => {
+    // If imageFile is provided, use FormData
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('title', data.title);
+      if (data.description) formData.append('description', data.description);
+      formData.append('category', data.category);
+      formData.append('date', data.date);
+      formData.append('location', data.location);
+      formData.append('price', data.price.toString());
+      if (data.totalTickets) formData.append('totalTickets', data.totalTickets.toString());
+      formData.append('bookingExpiry', data.bookingExpiry);
+      formData.append('image', imageFile);
+
+      const token = getToken();
+      const response = await fetch(`${API_BASE_URL}/events`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    // Otherwise use JSON
     return apiRequest<{ event: any; message: string }>('/events', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -198,7 +229,38 @@ export const eventsAPI = {
     imageUrl?: string;
     totalTickets?: number;
     bookingExpiry?: string;
-  }) => {
+  }, imageFile?: File) => {
+    // If imageFile is provided, use FormData
+    if (imageFile) {
+      const formData = new FormData();
+      if (data.title) formData.append('title', data.title);
+      if (data.description) formData.append('description', data.description);
+      if (data.category) formData.append('category', data.category);
+      if (data.date) formData.append('date', data.date);
+      if (data.location) formData.append('location', data.location);
+      if (data.price !== undefined) formData.append('price', data.price.toString());
+      if (data.totalTickets !== undefined) formData.append('totalTickets', data.totalTickets.toString());
+      if (data.bookingExpiry) formData.append('bookingExpiry', data.bookingExpiry);
+      formData.append('image', imageFile);
+
+      const token = getToken();
+      const response = await fetch(`${API_BASE_URL}/events/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'An error occurred' }));
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    // Otherwise use JSON
     return apiRequest<{ event: any; message: string }>(`/events/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),

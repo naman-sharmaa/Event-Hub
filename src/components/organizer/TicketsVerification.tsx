@@ -22,6 +22,7 @@ interface Ticket {
   ticketNumber: string;
   attendeeName: string;
   attendeeEmail: string;
+  attendeePhone: string;
   eventTitle: string;
   eventDate: string;
   status: 'pending' | 'approved' | 'denied';
@@ -76,6 +77,7 @@ const TicketsVerification = () => {
             ticketNumber: ticketNum,
             attendeeName: attendee?.name || booking.userId?.name || "Unknown",
             attendeeEmail: attendee?.email || booking.userId?.email || "",
+            attendeePhone: attendee?.phone || "",
             eventTitle: booking.eventId?.title || "Unknown Event",
             eventDate: new Date(booking.eventId?.date).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -438,6 +440,7 @@ const TicketsVerification = () => {
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 font-semibold">Ticket Number</th>
                     <th className="text-left py-3 px-4 font-semibold">Attendee</th>
+                    <th className="text-left py-3 px-4 font-semibold">Phone</th>
                     <th className="text-left py-3 px-4 font-semibold">Event</th>
                     <th className="text-left py-3 px-4 font-semibold">Status</th>
                     <th className="text-left py-3 px-4 font-semibold">Action</th>
@@ -453,6 +456,7 @@ const TicketsVerification = () => {
                           <p className="text-xs text-muted-foreground">{ticket.attendeeEmail}</p>
                         </div>
                       </td>
+                      <td className="py-3 px-4 text-sm">{ticket.attendeePhone || 'N/A'}</td>
                       <td className="py-3 px-4 text-sm">{ticket.eventTitle}</td>
                       <td className="py-3 px-4">
                         {ticket.isCancelled ? (

@@ -111,6 +111,13 @@ export const createEvent = async (req, res) => {
       bookingExpiry,
     } = req.body;
 
+    // If an image file was uploaded via multipart/form-data, use that
+    let finalImageUrl = imageUrl;
+    if (req.file) {
+      // Stored under /public/uploads/events
+      finalImageUrl = `/uploads/events/${req.file.filename}`;
+    }
+
     const event = await Event.create({
       organizerId: req.user.id,
       title,
@@ -119,7 +126,7 @@ export const createEvent = async (req, res) => {
       date,
       location,
       price,
-      imageUrl: imageUrl || undefined,
+      imageUrl: finalImageUrl || undefined,
       totalTickets: totalTickets || 0,
       availableTickets: totalTickets || 0,
       bookingExpiry,
@@ -168,6 +175,12 @@ export const updateEvent = async (req, res) => {
       bookingExpiry,
     } = req.body;
 
+    // If an image file was uploaded via multipart/form-data, use that
+    let finalImageUrl = imageUrl;
+    if (req.file) {
+      finalImageUrl = `/uploads/events/${req.file.filename}`;
+    }
+
     // Update only provided fields
     if (title !== undefined) event.title = title;
     if (description !== undefined) event.description = description;
@@ -175,7 +188,7 @@ export const updateEvent = async (req, res) => {
     if (date !== undefined) event.date = date;
     if (location !== undefined) event.location = location;
     if (price !== undefined) event.price = price;
-    if (imageUrl !== undefined) event.imageUrl = imageUrl;
+    if (finalImageUrl !== undefined) event.imageUrl = finalImageUrl;
     if (totalTickets !== undefined) {
       event.totalTickets = totalTickets;
       event.availableTickets = totalTickets;

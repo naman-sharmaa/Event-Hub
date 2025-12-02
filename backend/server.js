@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import admin from 'firebase-admin';
@@ -66,6 +68,10 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files (event images, etc.) from /public/uploads
+// Use process.cwd() so this works both locally and on Render
+app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
 // Apply maintenance mode check to all routes except admin
 app.use(checkMaintenanceMode);

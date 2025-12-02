@@ -5,6 +5,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { sendBookingConfirmationEmail, sendPaymentFailureEmail } from '../utils/emailService.js';
+import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -32,6 +33,26 @@ export const createBooking = async (req, res) => {
 
     if (quantity !== attendeeDetails.length) {
       return res.status(400).json({ message: 'Quantity must match attendee details count' });
+    }
+
+    // Validate phone numbers
+    for (let i = 0; i < attendeeDetails.length; i++) {
+      const { phone } = attendeeDetails[i];
+      if (!phone) {
+        return res.status(400).json({ message: `Phone number is required for attendee ${i + 1}` });
+      }
+      // Try to parse and validate phone number
+      // Assume international format if not provided (e.g., starts with +)
+      let phoneToValidate = phone.trim();
+      if (!phoneToValidate.startsWith('+')) {
+        // Default to India country code if no + prefix
+        phoneToValidate = '+91' + phoneToValidate;
+      }
+      if (!isValidPhoneNumber(phoneToValidate)) {
+        return res.status(400).json({ 
+          message: `Invalid phone number for attendee ${i + 1}. Please provide a valid phone number with country code (e.g., +919876543210)` 
+        });
+      }
     }
 
     // Get event details
