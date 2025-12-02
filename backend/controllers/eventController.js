@@ -94,11 +94,6 @@ export const getEvent = async (req, res) => {
 // Create event (organizer only)
 export const createEvent = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
     const {
       title,
       description,
@@ -110,6 +105,14 @@ export const createEvent = async (req, res) => {
       totalTickets,
       bookingExpiry,
     } = req.body;
+
+    // Manual validation for required fields
+    if (!title || !category || !date || !location || price === undefined || !bookingExpiry) {
+      return res.status(400).json({ 
+        message: 'Missing required fields',
+        required: ['title', 'category', 'date', 'location', 'price', 'bookingExpiry']
+      });
+    }
 
     // If an image file was uploaded via multipart/form-data, use that
     let finalImageUrl = imageUrl;
@@ -125,9 +128,9 @@ export const createEvent = async (req, res) => {
       category,
       date,
       location,
-      price,
+      price: parseFloat(price),
       imageUrl: finalImageUrl || undefined,
-      totalTickets: totalTickets || 0,
+      totalTickets: parseInt(totalTickets) || 0,
       availableTickets: totalTickets || 0,
       bookingExpiry,
     });
@@ -142,11 +145,6 @@ export const createEvent = async (req, res) => {
 // Update event (organizer only)
 export const updateEvent = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -187,11 +185,11 @@ export const updateEvent = async (req, res) => {
     if (category !== undefined) event.category = category;
     if (date !== undefined) event.date = date;
     if (location !== undefined) event.location = location;
-    if (price !== undefined) event.price = price;
+    if (price !== undefined) event.price = parseFloat(price);
     if (finalImageUrl !== undefined) event.imageUrl = finalImageUrl;
     if (totalTickets !== undefined) {
-      event.totalTickets = totalTickets;
-      event.availableTickets = totalTickets;
+      event.totalTickets = parseInt(totalTickets);
+      event.availableTickets = parseInt(totalTickets);
     }
     if (bookingExpiry !== undefined) event.bookingExpiry = bookingExpiry;
 
